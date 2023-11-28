@@ -1,4 +1,5 @@
-# create, activate a virtual environment and install de requirements:
+# create, activate a virtual environment and install the requirements:
+
 ```
 python3 -m venv venv
 source venv/bin/activate
