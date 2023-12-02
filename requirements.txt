@@ -1,4 +1,10 @@
 tensorflow
 Keras-Preprocessing
+keras
 numpy
 matplotlib
+keras-tuner
+scikit-learn
+keras-cv
+keras-nlp
+scikeras
