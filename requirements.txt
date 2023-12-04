@@ -8,3 +8,4 @@ scikit-learn
 keras-cv
 keras-nlp
 scikeras
+torch
