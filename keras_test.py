@@ -3,6 +3,7 @@ from keras.layers import Dense
 from keras.models import Sequential
 from keras.regularizers import l2
 from keras.optimizers import SGD
+from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.model_selection import train_test_split
 import numpy as np
@@ -41,10 +42,7 @@ def euclidean_distance_loss(y_true, y_pred):
     return K.sqrt(K.sum(K.square(y_pred - y_true), axis=-1))
 
 
-def create_model(learning_rate=0.001,
-                 momentum=0.01,
-                 loss=euclidean_distance_loss,
-                 lmb=0.0001,
+def create_model(lmb=0.0001,
                  n_units=20,
                  n_layers=3,
                  init_mode='glorot_normal',
@@ -58,10 +56,7 @@ def create_model(learning_rate=0.001,
 
         # create output layer with 3 neurons for x, y, z
     model.add(Dense(3, activation='linear', kernel_initializer=init_mode))
-
-    optimizer = SGD(learning_rate=learning_rate, momentum=momentum)
-    model.compile(optimizer=optimizer, loss=loss)
-
+    model.compile()
     return model
 
 
@@ -73,6 +68,56 @@ def euclidean_distance_score(y_true, y_pred):
 scorer = make_scorer(euclidean_distance_score, greater_is_better=False)
 
 
+def model_selection_diy(x, y, epochs: int = 300):
+    # Evaluation list contains each tested model and relatives parameters into a dictionary
+    evaluation = []
+    learning_rate = np.arange(start=0.002, stop=0.01, step=0.001)
+    learning_rate = [float(round(i, 4)) for i in list(learning_rate)]
+
+    momentum = np.arange(start=0.4, stop=1, step=0.1)
+    momentum = [float(round(i, 1)) for i in list(momentum)]
+
+    lmb = np.arange(start=0.0001, stop=0.001, step=0.0001)
+    lmb = [float(round(i, 4)) for i in list(lmb)]
+
+    total = len(learning_rate) + len(momentum) + len(lmb)
+    print(f"Total {total} fits.")
+
+    for lr in learning_rate:
+        for mom in momentum:
+            for lm in lmb:
+                for bs in [20]:
+                    optimizer = SGD(learning_rate=lr, momentum=mom)
+                    model = create_model(lmb=lm)
+                    model.compile(optimizer=optimizer, loss=euclidean_distance_loss)
+                    history = model.fit(x, y, batch_size=bs, epochs=epochs, validation_split=0.3)
+
+                    model_loss = [np.mean(history.history["val_loss"]), np.mean(history.history["loss"])]
+                    metrics = dict(learning_rate=lr,
+                                   momentum=mom,
+                                   lmb=lm,
+                                   batch_size=bs,
+                                   val_score=model_loss[0],
+                                   train_score=model_loss[1])
+                    evaluation.append(metrics)
+                    print(f"Testing model→ Learning_rate: {lr}, momentum: {mom}, "
+                          f"L2: {lm}, batch_size: {bs}, val_score: {model_loss[0]}")
+
+    print("Evaluating best model...")
+    best = 10000
+    for mod in evaluation:
+        if mod["val_score"] < best:
+            best = mod
+
+    print(f"Best model: {best}")
+
+    return dict(learning_rate=best["learning_rate"],
+                momentum=best["momentum"],
+                lmb=best["lmb"],
+                epochs=epochs,
+                batch_size=best["batch_size"])
+
+
 def model_selection(x, y, epochs=300):
     # reproducibility
     seed = 27
@@ -81,30 +126,29 @@ def model_selection(x, y, epochs=300):
     model = KerasRegressor(model=create_model,
                            epochs=epochs,
                            verbose=0,
-                           learning_rate=0.001,
-                           momentum=0.01,
-                           lmb=0.0001,
-                           loss=euclidean_distance_loss)
+                           lmb=0.0005,
+                           loss=euclidean_distance_loss,
+                           optimizer=SGD(learning_rate=0.002, momentum=0.4))
 
     # parameters explored during the grid search, params: learning_rate(learning_rate), momentum(momentum),
     # regularizer(l2), batch_size
-    learning_rate = np.arange(start=0.003, stop=0.01, step=0.001)
+    learning_rate = np.arange(start=0.002, stop=0.01, step=0.001)
     learning_rate = [float(round(i, 4)) for i in list(learning_rate)]
 
     momentum = np.arange(start=0.4, stop=1, step=0.1)
     momentum = [float(round(i, 1)) for i in list(momentum)]
 
-    lmb = np.arange(start=0.0005, stop=0.001, step=0.0001)
+    lmb = np.arange(start=0.0001, stop=0.001, step=0.0001)
     lmb = [float(round(i, 4)) for i in list(lmb)]
 
-    batch_size = [16, 32, 64]
+    batch_size = [20]
 
-    param_grid = dict(learning_rate=learning_rate, momentum=momentum, lmb=lmb, batch_size=batch_size)
+    param_grid = dict(optimizer__learning_rate=learning_rate, optimizer__momentum=momentum, lmb=lmb, batch_size=batch_size)
 
     start_time = time.time()
     print("Starting the Grid Search...\n")
 
-    # use grid search from scikit lear, passing also as param number of fold of cross-validation
+    # use grid search from scikit learn, passing also as param number of fold of cross-validation
     grid = GridSearchCV(estimator=model, param_grid=param_grid, cv=10,
                         return_train_score=True, scoring=scorer, verbose=3)
 
@@ -184,12 +228,12 @@ def keras_nn(ms=True):
 
     # choose model selection or hand-given parameters
     if ms:
-        params = model_selection(x, y)
+        params = model_selection_diy(x, y)
     else:
-        params = dict(eta=0.002, alpha=0.7, lmb=0.0001, epochs=200, batch_size=64)
+        params = dict(learning_rate=0.002, momentum=0.7, lmb=0.0001, epochs=500, batch_size=64)
 
     # create and fit the model
-    model = create_model(learning_rate=params['learning:rate'], momentum=params['momentum'], lmb=params['lmb'])
+    model = create_model(learning_rate=params['learning_rate'], momentum=params['momentum'], lmb=params['lmb'])
     res = model.fit(x, y, validation_split=0.3, epochs=params['epochs'], batch_size=params['batch_size'], verbose=1)
 
     tr_losses = res.history['loss']
