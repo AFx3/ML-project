@@ -68,25 +68,25 @@ def euclidean_distance_score(y_true, y_pred):
 scorer = make_scorer(euclidean_distance_score, greater_is_better=False)
 
 
-def model_selection_diy(x, y, epochs: int = 300):
+def model_selection_diy(x, y, epochs: int = 100):
     # Evaluation list contains each tested model and relatives parameters into a dictionary
     evaluation = []
-    learning_rate = np.arange(start=0.002, stop=0.01, step=0.001)
+    learning_rate = np.arange(start=0.008, stop=0.02, step=0.002)
     learning_rate = [float(round(i, 4)) for i in list(learning_rate)]
 
-    momentum = np.arange(start=0.4, stop=1, step=0.1)
+    momentum = np.arange(start=0.5, stop=1, step=0.1)
     momentum = [float(round(i, 1)) for i in list(momentum)]
 
-    lmb = np.arange(start=0.0001, stop=0.001, step=0.0001)
+    lmb = np.arange(start=0.00001, stop=0.0001, step=0.00001)
     lmb = [float(round(i, 4)) for i in list(lmb)]
 
-    total = len(learning_rate) + len(momentum) + len(lmb)
+    total = len(learning_rate) * len(momentum) * len(lmb)
     print(f"Total {total} fits.")
 
     for lr in learning_rate:
         for mom in momentum:
             for lm in lmb:
-                for bs in [20]:
+                for bs in [50]:
                     optimizer = SGD(learning_rate=lr, momentum=mom)
                     model = create_model(lmb=lm)
                     model.compile(optimizer=optimizer, loss=euclidean_distance_loss)
@@ -107,15 +107,16 @@ def model_selection_diy(x, y, epochs: int = 300):
     best = 10000
     for mod in evaluation:
         if mod["val_score"] < best:
-            best = mod
+            best = mod["val_score"]
+            bestm = mod
 
-    print(f"Best model: {best}")
+    print(f"Best model: {bestm}")
 
-    return dict(learning_rate=best["learning_rate"],
-                momentum=best["momentum"],
-                lmb=best["lmb"],
+    return dict(learning_rate=bestm["learning_rate"],
+                momentum=bestm["momentum"],
+                lmb=bestm["lmb"],
                 epochs=epochs,
-                batch_size=best["batch_size"])
+                batch_size=bestm["batch_size"])
 
 
 def model_selection(x, y, epochs=300):
@@ -233,7 +234,7 @@ def keras_nn(ms=True):
         params = dict(learning_rate=0.002, momentum=0.7, lmb=0.0001, epochs=500, batch_size=64)
 
     # create and fit the model
-    model = create_model(learning_rate=params['learning_rate'], momentum=params['momentum'], lmb=params['lmb'])
+    model = create_model(lmb=params['lmb'])
     res = model.fit(x, y, validation_split=0.3, epochs=params['epochs'], batch_size=params['batch_size'], verbose=1)
 
     tr_losses = res.history['loss']
