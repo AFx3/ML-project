@@ -48,7 +48,7 @@ VL Loss:  2.0903623357184684e-17
 TS Loss:  43.88590842381799
 ------------------------------------------------
 
-Results with 20 units 3 layers and EarlyStopping:
+Results with 20 units 39089 layers and EarlyStopping:
 
 →→→ ElasticNet regularizer ←←←
 Parameters:
