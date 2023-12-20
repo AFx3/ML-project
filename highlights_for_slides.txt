@@ -1,0 +1,87 @@
+___KERAS-ML-CUP___
+Elasticnet > Lasso > Ridge
+
+___Gridsearch parameters range___
+- Learning rate: range(0.01, 0.4, 0.02)
+- Momentum: range(0.4, 0.9, 0.1)
+- Lambda1 (Lasso & Ridge): range(0.0001, 0.001, 0.0002)
+- Lambda2 (ElasticNet): range(0.0001, 0.001, 0.0002)
+
+___Fixed parameters___
+- Batch size: 50
+- EarlyStopping patience: 10
+
+Results with 5 units 2 layers and EarlyStopping:
+
+→→→ Regularizer: ElasticNet ←←←
+Parameters:
+- Learning rate: 0.02
+- Momentum: 0.9
+- Lmb1: 0.0005
+- Lmb2: 0.0005
+- Epochs: 470 ca
+
+TR Loss:  5.028925897931913e-07
+VL Loss:  4.6457168423330586e-07
+TS Loss:  43.88590842436641
+------------------------------------------------
+→→→ Regularizer: Lasso ←←←
+Parameters:
+- Learning rate: 0.02
+- Momentum: 0.9
+- Lmb: 0.0007
+- Epochs: 554 ca
+
+TR Loss:  9.514876069260936e-07
+VL Loss:  9.675022738520056e-07
+TS Loss:  43.885908425023956
+------------------------------------------------
+→→→ Regularizer: Ridge ←←←
+Parameters:
+- Learning rate: 0.02
+- Momentum: 0.9
+- Lmb: 0.0007
+- Epochs: 5000+ ca (no EarlyStopping encountered)
+
+TR Loss:  2.0980097859176436e-17
+VL Loss:  2.0903623357184684e-17
+TS Loss:  43.88590842381799
+------------------------------------------------
+
+Results with 20 units 3 layers and EarlyStopping:
+
+→→→ ElasticNet regularizer ←←←
+Parameters:
+- Learning rate: 0.02
+- Momentum: 0.9
+- Lmb1: 0.0005
+- Lmb2: 0.0005
+- Regularizer: ElasticNet
+- Epochs: 340 ca
+
+TR Loss:  6.388082056218991e-06
+VL Loss:  6.29686155662057e-06
+TS Loss:  43.8859084238177
+------------------------------------------------
+→→→ Lasso regularizer ←←←
+Parameters:
+- Learning rate: 0.02
+- Momentum: 0.9
+- Lmb: 0.0005
+- Epochs: 500 ca
+
+TR Loss:  6.495331490441458e-06
+VL Loss:  6.531400231324369e-06
+TS Loss:  43.88590842381797
+------------------------------------------------
+→→→ Ridge regularizer ←←←
+Parameters:
+- Learning rate: 0.02
+- Momentum: 0.9
+- Lmb: 0.0005
+- Epochs: 5000+ (no EarlyStopping encountered)
+
+TR Loss:  1.185151560223474e-10
+VL Loss:  1.182684505884879e-10
+TS Loss:  43.885908423818265
+------------------------------------------------

@@ -1,8 +1,9 @@
 import keras
 from keras.layers import Dense
 from keras.models import Sequential
-from keras.regularizers import l2
+from keras.regularizers import l1, l2, l1_l2
 from keras.optimizers import SGD
+from keras.callbacks import  EarlyStopping
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.model_selection import train_test_split
@@ -42,21 +43,24 @@ def euclidean_distance_loss(y_true, y_pred):
     return K.sqrt(K.sum(K.square(y_pred - y_true), axis=-1))
 
 
-def create_model(lmb=0.0001,
-                 n_units=20,
-                 n_layers=3,
+def create_model(lmb=0.0001, lmb2=0.0001,
+                 n_units=5,
+                 n_layers=2,
                  init_mode='glorot_normal',
-                 activation_fx='tanh'):
+                 activation_fx='tanh',
+                 regularizer=l1_l2):
     model = Sequential()
 
     # create hidden layers
     for i in range(n_layers):
         # dense is for units fully connected
-        model.add(Dense(n_units, kernel_initializer=init_mode, activation=activation_fx, kernel_regularizer=l2(lmb)))
+        model.add(Dense(n_units,
+                        kernel_initializer=init_mode,
+                        activation=activation_fx,
+                        kernel_regularizer=regularizer(lmb, lmb2)))
 
         # create output layer with 3 neurons for x, y, z
     model.add(Dense(3, activation='linear', kernel_initializer=init_mode))
-    model.compile()
     return model
 
 
@@ -71,24 +75,30 @@ scorer = make_scorer(euclidean_distance_score, greater_is_better=False)
 def model_selection_diy(x, y, epochs: int = 100):
     # Evaluation list contains each tested model and relatives parameters into a dictionary
     evaluation = []
-    learning_rate = np.arange(start=0.008, stop=0.02, step=0.002)
+    learning_rate = np.arange(start=0.01, stop=0.4, step=0.01)
     learning_rate = [float(round(i, 4)) for i in list(learning_rate)]
 
-    momentum = np.arange(start=0.5, stop=1, step=0.1)
+    momentum = np.arange(start=0.9, stop=1, step=0.1)
     momentum = [float(round(i, 1)) for i in list(momentum)]
 
-    lmb = np.arange(start=0.00001, stop=0.0001, step=0.00001)
-    lmb = [float(round(i, 4)) for i in list(lmb)]
+    lmb = np.arange(start=0.0001, stop=0.001, step=0.0004)
+    lmb = [float(round(i, 5)) for i in list(lmb)]
+
+    lmb2 = np.arange(start=0.0001, stop=0.001, step=0.0004)
+    lmb2 = [float(round(i, 5)) for i in list(lmb)]
 
     total = len(learning_rate) * len(momentum) * len(lmb)
     print(f"Total {total} fits.")
+    learning_rate = [0.02]
+    momentum = [0.9]
+    bs = 50
 
     for lr in learning_rate:
         for mom in momentum:
             for lm in lmb:
-                for bs in [50]:
+                for lm2 in lmb2:
                     optimizer = SGD(learning_rate=lr, momentum=mom)
-                    model = create_model(lmb=lm)
+                    model = create_model(lmb=lm, lmb2=lm2, regularizer=l1_l2)
                     model.compile(optimizer=optimizer, loss=euclidean_distance_loss)
                     history = model.fit(x, y, batch_size=bs, epochs=epochs, validation_split=0.3)
 
@@ -96,6 +106,7 @@ def model_selection_diy(x, y, epochs: int = 100):
                     metrics = dict(learning_rate=lr,
                                    momentum=mom,
                                    lmb=lm,
+                                   lmb2=lm2,
                                    batch_size=bs,
                                    val_score=model_loss[0],
                                    train_score=model_loss[1])
@@ -115,64 +126,10 @@ def model_selection_diy(x, y, epochs: int = 100):
     return dict(learning_rate=bestm["learning_rate"],
                 momentum=bestm["momentum"],
                 lmb=bestm["lmb"],
+                lmb2=bestm["lmb2"],
                 epochs=epochs,
-                batch_size=bestm["batch_size"])
-
-
-def model_selection(x, y, epochs=300):
-    # reproducibility
-    seed = 27
-    np.random.seed(seed)
-    # create model using a keras regressor, will be used as estimator for the grid search in gridsearchCV
-    model = KerasRegressor(model=create_model,
-                           epochs=epochs,
-                           verbose=0,
-                           lmb=0.0005,
-                           loss=euclidean_distance_loss,
-                           optimizer=SGD(learning_rate=0.002, momentum=0.4))
-
-    # parameters explored during the grid search, params: learning_rate(learning_rate), momentum(momentum),
-    # regularizer(l2), batch_size
-    learning_rate = np.arange(start=0.002, stop=0.01, step=0.001)
-    learning_rate = [float(round(i, 4)) for i in list(learning_rate)]
-
-    momentum = np.arange(start=0.4, stop=1, step=0.1)
-    momentum = [float(round(i, 1)) for i in list(momentum)]
-
-    lmb = np.arange(start=0.0001, stop=0.001, step=0.0001)
-    lmb = [float(round(i, 4)) for i in list(lmb)]
-
-    batch_size = [20]
-
-    param_grid = dict(optimizer__learning_rate=learning_rate, optimizer__momentum=momentum, lmb=lmb, batch_size=batch_size)
-
-    start_time = time.time()
-    print("Starting the Grid Search...\n")
-
-    # use grid search from scikit learn, passing also as param number of fold of cross-validation
-    grid = GridSearchCV(estimator=model, param_grid=param_grid, cv=10,
-                        return_train_score=True, scoring=scorer, verbose=3)
-
-    grid_result = grid.fit(x, y)
-
-    # results, scores of tr e test, traning time, prediction, parameters of each configuration
-    print("\nEnded Grid Search. ({:.4f})\n".format(time.time() - start_time))
-
-    means_train = abs(grid_result.cv_results_['mean_train_score'])
-    means_test = abs(grid_result.cv_results_['mean_test_score'])
-    times_train = grid_result.cv_results_['mean_fit_time']
-    times_test = grid_result.cv_results_['mean_score_time']
-    params = grid_result.cv_results_['params']
-
-    for m_ts, t_ts, m_tr, t_tr, p in sorted(zip(means_test, times_test, means_train, times_train, params)):
-        print("{} \t TR {:.4f} (in {:.4f}) \t TS {:.4f} (in {:.4f})".format(p, m_tr, t_tr, m_ts, t_ts))
-
-    print("\nBest: {:.4f} using {}\n".format(abs(grid.best_score_), grid_result.best_params_))
-
-    best_params = grid_result.best_params_
-    best_params['epochs'] = epochs
-
-    return best_params
+                batch_size=bestm["batch_size"],
+                regularizer=l1_l2)
 
 
 def predict(model, x_ts, x_its, y_its):
@@ -220,26 +177,34 @@ def plot_learning_curve(history, start_epoch=1, **kwargs):
     plt.show()
 
 
-def keras_nn(ms=True):
+def keras_nn(ms=False):
     print("keras start")
 
     file_path_tr = "./cup/ds/ML-CUP23-TR.csv"
     # read training set
     x, y, x_its, y_its = read_tr(file_path_tr)
-
     # choose model selection or hand-given parameters
     if ms:
         params = model_selection_diy(x, y)
     else:
-        params = dict(learning_rate=0.002, momentum=0.7, lmb=0.0001, epochs=500, batch_size=64)
+        # Best model with Ridge regulatization
+        # params = dict(learning_rate=0.016, momentum=0.9, lmb=0.0005, epochs=1000, batch_size=50, regularizer=l2)
+        # Best model with LASSO regularization
+        params = dict(learning_rate=0.02, momentum=0.9, lmb=0.0005, lmb2=0.0005, epochs=5000, batch_size=50, regularizer=l1_l2)
 
     # create and fit the model
-    model = create_model(lmb=params['lmb'])
-    res = model.fit(x, y, validation_split=0.3, epochs=params['epochs'], batch_size=params['batch_size'], verbose=1)
+    cb = EarlyStopping(monitor="val_loss", patience=10)
+    model = create_model(lmb=params['lmb'], lmb2=params["lmb2"], regularizer=params["regularizer"])
+    model.compile(optimizer=SGD(learning_rate=params["learning_rate"], momentum=params["momentum"]))
+    res = model.fit(x, y,
+                    validation_split=0.3,
+                    epochs=params['epochs'],
+                    batch_size=params['batch_size'],
+                    callbacks=[cb],
+                    verbose=1)
 
     tr_losses = res.history['loss']
     val_losses = res.history['val_loss']
-
     # Predict for the three variables
     y_pred, ts_losses = predict(model=model, x_ts=read_ts(), x_its=x_its, y_its=y_its)
 
@@ -250,12 +215,12 @@ def keras_nn(ms=True):
     # Extract predictions for each variable
     y_pred_x, y_pred_y, y_pred_z = y_pred
 
-    print("Predictions for X: ", y_pred_x)
-    print("Predictions for Y: ", y_pred_y)
-    print("Predictions for Z: ", y_pred_z)
+    # print("Predictions for X: ", y_pred_x)
+    # print("Predictions for Y: ", y_pred_y)
+    # print("Predictions for Z: ", y_pred_z)
 
     print("keras end")
-
+    params["epochs"] = len(tr_losses)
     plot_learning_curve(res.history, savefig=True, **params)
 
 
