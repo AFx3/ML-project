@@ -25,6 +25,17 @@ TR Loss:  5.028925897931913e-07
 VL Loss:  4.6457168423330586e-07
 TS Loss:  43.88590842436641
 ------------------------------------------------
+→→→ Optimizer: Adam ←←←
+Parameters:
+- Learning rate: 0.02
+- Lmb1: 0.0007
+- Lmb2: 0.0006
+- Epochs: 20 ca
+
+TR Loss:  0.00015281887317541987
+VL Loss:  0.00016123481327667832
+TS Loss:  43.88595076001786
+------------------------------------------------
 →→→ Regularizer: Lasso ←←←
 Parameters:
 - Learning rate: 0.02
@@ -50,7 +61,7 @@ TS Loss:  43.88590842381799
 
 Results with 20 units 39089 layers and EarlyStopping:
 
-→→→ ElasticNet regularizer ←←←
+→→→ Regularizer: ElasticNet ←←←
 Parameters:
 - Learning rate: 0.02
 - Momentum: 0.9
@@ -63,7 +74,18 @@ TR Loss:  6.388082056218991e-06
 VL Loss:  6.29686155662057e-06
 TS Loss:  43.8859084238177
 ------------------------------------------------
-→→→ Lasso regularizer ←←←
+→→→ Optimizer: Adam ←←←
+Parameters:
+- Learning rate: 0.02
+- Lmb1: 0.0002
+- Lmb2: 0.0003
+- Epochs: 20 ca
+
+TR Loss:  0.0004916514153592288
+VL Loss:  0.0005132898804731667
+TS Loss:  43.885910531276046
+------------------------------------------------
+→→→ Regularizer: Lasso ←←←
 Parameters:
 - Learning rate: 0.02
 - Momentum: 0.9
@@ -74,7 +96,7 @@ TR Loss:  6.495331490441458e-06
 VL Loss:  6.531400231324369e-06
 TS Loss:  43.88590842381797
 ------------------------------------------------
-→→→ Ridge regularizer ←←←
+→→→ Regularizer: Ridge ←←←
 Parameters:
 - Learning rate: 0.02
 - Momentum: 0.9

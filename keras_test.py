@@ -1,18 +1,12 @@
-import keras
 from keras.layers import Dense
 from keras.models import Sequential
 from keras.regularizers import l1, l2, l1_l2
-from keras.optimizers import SGD
+from keras.optimizers import SGD, Adam
 from keras.callbacks import  EarlyStopping
-from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.model_selection import train_test_split
 import numpy as np
 from numpy import loadtxt
 from keras import backend as K
-
-from scikeras.wrappers import KerasRegressor
-import time
 from sklearn.metrics import make_scorer
 
 from matplotlib import pyplot as plt
@@ -44,8 +38,8 @@ def euclidean_distance_loss(y_true, y_pred):
 
 
 def create_model(lmb=0.0001, lmb2=0.0001,
-                 n_units=5,
-                 n_layers=2,
+                 n_units=20,
+                 n_layers=3,
                  init_mode='glorot_normal',
                  activation_fx='tanh',
                  regularizer=l1_l2):
@@ -81,7 +75,7 @@ def model_selection_diy(x, y, epochs: int = 100):
     momentum = np.arange(start=0.9, stop=1, step=0.1)
     momentum = [float(round(i, 1)) for i in list(momentum)]
 
-    lmb = np.arange(start=0.0001, stop=0.001, step=0.0004)
+    lmb = np.arange(start=0.0001, stop=0.001, step=0.0001)
     lmb = [float(round(i, 5)) for i in list(lmb)]
 
     lmb2 = np.arange(start=0.0001, stop=0.001, step=0.0004)
@@ -94,10 +88,11 @@ def model_selection_diy(x, y, epochs: int = 100):
     bs = 50
 
     for lr in learning_rate:
-        for mom in momentum:
+        for mom in [1]:
             for lm in lmb:
                 for lm2 in lmb2:
-                    optimizer = SGD(learning_rate=lr, momentum=mom)
+                    # optimizer = SGD(learning_rate=lr, momentum=mom)
+                    optimizer = Adam(learning_rate=lr)
                     model = create_model(lmb=lm, lmb2=lm2, regularizer=l1_l2)
                     model.compile(optimizer=optimizer, loss=euclidean_distance_loss)
                     history = model.fit(x, y, batch_size=bs, epochs=epochs, validation_split=0.3)
@@ -177,7 +172,7 @@ def plot_learning_curve(history, start_epoch=1, **kwargs):
     plt.show()
 
 
-def keras_nn(ms=False):
+def keras_nn(ms=True):
     print("keras start")
 
     file_path_tr = "./cup/ds/ML-CUP23-TR.csv"
@@ -187,15 +182,17 @@ def keras_nn(ms=False):
     if ms:
         params = model_selection_diy(x, y)
     else:
-        # Best model with Ridge regulatization
+        # Best model with Lasso/Ridge regulatization
         # params = dict(learning_rate=0.016, momentum=0.9, lmb=0.0005, epochs=1000, batch_size=50, regularizer=l2)
-        # Best model with LASSO regularization
-        params = dict(learning_rate=0.02, momentum=0.9, lmb=0.0005, lmb2=0.0005, epochs=5000, batch_size=50, regularizer=l1_l2)
+        # Best model with ElasticNet regularization
+        params = dict(learning_rate=0.02, momentum=0.9, lmb=0.0005,
+                      lmb2=0.0005, epochs=5000, batch_size=50, regularizer=l1_l2)
 
     # create and fit the model
     cb = EarlyStopping(monitor="val_loss", patience=10)
     model = create_model(lmb=params['lmb'], lmb2=params["lmb2"], regularizer=params["regularizer"])
-    model.compile(optimizer=SGD(learning_rate=params["learning_rate"], momentum=params["momentum"]))
+    # model.compile(optimizer=SGD(learning_rate=params["learning_rate"], momentum=params["momentum"]))
+    model.compile(optimizer=Adam(learning_rate=params["learning_rate"]))
     res = model.fit(x, y,
                     validation_split=0.3,
                     epochs=params['epochs'],
@@ -213,12 +210,13 @@ def keras_nn(ms=False):
     print("TS Loss: ", np.mean(ts_losses))
 
     # Extract predictions for each variable
+    '''
     y_pred_x, y_pred_y, y_pred_z = y_pred
 
-    # print("Predictions for X: ", y_pred_x)
-    # print("Predictions for Y: ", y_pred_y)
-    # print("Predictions for Z: ", y_pred_z)
-
+    print("Predictions for X: ", y_pred_x)
+    print("Predictions for Y: ", y_pred_y)
+    print("Predictions for Z: ", y_pred_z)
+    '''
     print("keras end")
     params["epochs"] = len(tr_losses)
     plot_learning_curve(res.history, savefig=True, **params)
