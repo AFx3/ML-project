@@ -14,7 +14,12 @@ from matplotlib import pyplot as plt
 
 
 def read_tr(file_path, test_size=0.15, random_state=42):
-    """Load tr data"""
+    """Load training data and compute the validation split.
+    Parameters:
+        file_path: string containing the complete path where the training dataset is stored
+        test_size: float between 0.0 and 1.0 defining the amount of dataset to be kept for the validation set
+        random_state: integer that allows the replicability of the analysis
+    """
     train = loadtxt(file_path, delimiter=',', usecols=range(1, 14), dtype=np.float64)
 
     # Esclude la prima colonna e le ultime tre colonne (target)
@@ -27,14 +32,15 @@ def read_tr(file_path, test_size=0.15, random_state=42):
     return x_train, y_train, x_test, y_test
 
 
-def read_ts():
-    file = "./cup/ds/ML-CUP23-TS.csv"
+def read_ts(file: str = "./cup/ds/ML-CUP23-TS.csv"):
+    """Load and return the 'blind test' dataset given its full path."""
     test = loadtxt(file, delimiter=',', usecols=range(1, 11), dtype=np.float64)
 
     return test
 
 
 def euclidean_distance_loss(y_true, y_pred):
+    """Compute the Euclidean distance, used in training and evaluation of the model."""
     return K.sqrt(K.sum(K.square(y_pred - y_true), axis=-1))
 
 
@@ -44,11 +50,23 @@ def create_model(lmb=0.0001, lmb2=0.0001,
                  init_mode='glorot_normal',
                  activation_fx='tanh',
                  regularizer=l1_l2):
+    """This function returns a brand-new model every time is called, so it's useful for gridsearch.
+
+    Args:
+      lmb: lambda for the L1/L2 regularizer
+      lmb2: if L1L2 is used, this is the lambda of the L2 regularizer, while the previous one of the L1
+      n_units: number of units of the dense layers
+      n_layers: number of dense layers to add to the neural network
+      init_mode: initialization method to use for the layers. Default is 'glorot_normal' but any of those accepted
+        by Keras can be used
+      activation_fx: activation function for the hidden layers. Default is 'tanh' but any of those accepted by Keras
+        can be used. The activation function for the output layer is predefined as linear and cannot be modified
+      regularizer: regularizer applied to each dense layer.
+    """
     model = Sequential()
 
-    # create hidden layers
+    # Create hidden layers
     for i in range(n_layers):
-        # dense is for units fully connected
         model.add(Dense(n_units,
                         kernel_initializer=init_mode,
                         activation=activation_fx,
@@ -67,7 +85,8 @@ def euclidean_distance_score(y_true, y_pred):
 scorer = make_scorer(euclidean_distance_score, greater_is_better=False)
 
 
-def model_selection_diy(x, y, epochs: int = 100):
+def model_selection(x, y, epochs: int = 100):
+    """Computed the gridsearch over some parameters and returns the best model."""
     # Evaluation list contains each tested model and relatives parameters into a dictionary
     evaluation = []
     learning_rate = np.arange(start=0.01, stop=0.4, step=0.01)
@@ -129,7 +148,6 @@ def model_selection_diy(x, y, epochs: int = 100):
 
 
 def predict(model, x_ts, x_its, y_its):
-
     # predict on internal test set
     y_ipred = model.predict(x_its)
     iloss = euclidean_distance_loss(y_its, y_ipred)
@@ -137,12 +155,11 @@ def predict(model, x_ts, x_its, y_its):
     # predict on blind test set
     y_pred = model.predict(x_ts)
 
-    # return predicted target on blind test set,
-    # and losses on internal test set
-    # eturn y_pred, K.eval(iloss)
+    # Return predicted target on blind test set and losses on internal test set
+    # y_pred is a matrix where each column represents predictions for one of the three target variables.
+    # The function returns a list of arrays, one for each column.
     return [y_pred[:, i] for i in range(y_pred.shape[1])], K.eval(iloss)
-# y_pred sarà una matrice in cui ogni colonna rappresenta le previsioni per una delle tre variabili target.
-# La funzione restituirà quindi una lista di array, uno per ciascuna colonna.
+
 
 
 def plot_learning_curve(history, start_epoch=1, **kwargs):
@@ -181,7 +198,7 @@ def keras_nn(ms=True):
     x, y, x_its, y_its = read_tr(file_path_tr)
     # choose model selection or hand-given parameters
     if ms:
-        params = model_selection_diy(x, y)
+        params = model_selection(x, y)
     else:
         # Best model with Lasso/Ridge regulatization
         # params = dict(learning_rate=0.016, momentum=0.9, lmb=0.0005, epochs=1000, batch_size=50, regularizer=l2)
@@ -189,7 +206,7 @@ def keras_nn(ms=True):
         params = dict(learning_rate=0.02, momentum=0.9, lmb=0.0005,
                       lmb2=0.0005, epochs=5000, batch_size=50, regularizer=l1_l2)
 
-    # create and fit the model
+    # Create and fit the model
     cb = EarlyStopping(monitor="val_loss", patience=10)
     model = create_model(lmb=params['lmb'], lmb2=params["lmb2"], regularizer=params["regularizer"])
     # model.compile(optimizer=SGD(learning_rate=params["learning_rate"], momentum=params["momentum"]))
@@ -203,7 +220,7 @@ def keras_nn(ms=True):
 
     tr_losses = res.history['loss']
     val_losses = res.history['val_loss']
-    # Predict for the three variables
+    # Prediction for the three variables
     y_pred, ts_losses = predict(model=model, x_ts=read_ts(), x_its=x_its, y_its=y_its)
 
     print("TR Loss: ", tr_losses[-1])
@@ -224,15 +241,17 @@ def keras_nn(ms=True):
 
 
 def extremelm():
+    """Create and fit an extreme learning machine using the Moore-Penrose pseudo inverse as shown in the original
+    aper."""
     file_path_tr = "./cup/ds/ML-CUP23-TR.csv"
     x_train, y_train, x_test, y_test = read_tr(file_path_tr)
     num_classes = 3
-    num_hidden_layers = 500
+    num_hidden_units = 300
 
-    # create instance of our model
+    # Create instance of our model
     model = ELM(
         num_input_nodes=10,
-        num_hidden_units=num_hidden_layers,
+        num_hidden_units=num_hidden_units,
         num_out_units=num_classes,
         activation="sigmoid",
         loss="mse"

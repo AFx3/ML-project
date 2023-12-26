@@ -88,8 +88,6 @@ class ELM:
 
         self._beta = H_pinv.dot(Y)
 
-        # print('Fit Beta shape:', self._beta.shape)
-
     def __call__(self, X):
         H = self._activation(X.dot(self._w) + self._bias)
         return H.dot(self._beta)
@@ -103,5 +101,4 @@ class ELM:
         # Accuracy
         acc = np.sum(np.argmax(pred, axis=-1) == np.argmax(Y, axis=-1)) / len(Y)
 
-        # Unweighted Average Recall
         return loss, acc

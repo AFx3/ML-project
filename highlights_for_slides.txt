@@ -10,6 +10,8 @@ ___Gridsearch parameters range___
 ___Fixed parameters___
 - Batch size: 50
 - EarlyStopping patience: 10
+- Initialization: Glorot Normal (Normalizer Xavier)
+- Activation function: hyperbolic tangent for hidden layer, linear for output layer
 
 Results with 5 units 2 layers and EarlyStopping:
 
@@ -107,3 +109,12 @@ TR Loss:  1.185151560223474e-10
 VL Loss:  1.182684505884879e-10
 TS Loss:  43.885908423818265
 ------------------------------------------------
+
+ELM results with 300 hidden units and sigmoid activation function
+- NO PARAMETERS NEEDED
+
+Train time: 0.12140297889709473
+train loss: 0.036575
+train acc: 0.998824
+val loss: 0.599965
+val acc: 1.000000
