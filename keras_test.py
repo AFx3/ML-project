@@ -8,6 +8,7 @@ import numpy as np
 from numpy import loadtxt
 from keras import backend as K
 from sklearn.metrics import make_scorer
+from elm import ELM
 
 from matplotlib import pyplot as plt
 
@@ -222,4 +223,31 @@ def keras_nn(ms=True):
     plot_learning_curve(res.history, savefig=True, **params)
 
 
-keras_nn()
+def extremelm():
+    file_path_tr = "./cup/ds/ML-CUP23-TR.csv"
+    x_train, y_train, x_test, y_test = read_tr(file_path_tr)
+    num_classes = 3
+    num_hidden_layers = 500
+
+    # create instance of our model
+    model = ELM(
+        num_input_nodes=10,
+        num_hidden_units=num_hidden_layers,
+        num_out_units=num_classes,
+        activation="sigmoid",
+        loss="mse"
+    )
+
+    # Train
+    model.fit(x_train, y_train, True)
+    train_loss, train_acc = model.evaluate(x_train, y_train)
+    print('train loss: %f' % train_loss)
+    print('train acc: %f' % train_acc)
+
+    # Validation
+    val_loss, val_acc = model.evaluate(x_test, y_test)
+    print('val loss: %f' % val_loss)
+    print('val acc: %f' % val_acc)
+
+
+extremelm()
