@@ -1,5 +1,6 @@
 import numpy as np
 import time
+from keras import backend as K
 
 
 def _mean_squared_error(y, pred):
@@ -8,6 +9,10 @@ def _mean_squared_error(y, pred):
 
 def _mean_abs_error(y, pred):
     return np.mean(np.abs(y, pred))
+
+
+def _euclidean_error(y_true, y_pred):
+    return np.sum(np.sqrt(np.sum(np.square(y_true - y_pred), axis=1))) / len(y_true)
 
 
 def _sigmoid(x):
@@ -42,7 +47,8 @@ def getActivation(name):
 def getLoss(name):
     return {
         'mse': _mean_squared_error,
-        'mae': _mean_abs_error
+        'mae': _mean_abs_error,
+        'mee': _euclidean_error
     }[name]
 
 

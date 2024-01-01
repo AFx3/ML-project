@@ -2,7 +2,7 @@ from keras.layers import Dense
 from keras.models import Sequential
 from keras.regularizers import l1, l2, l1_l2
 from keras.optimizers import SGD, Adam
-from keras.callbacks import  EarlyStopping
+from keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
 import numpy as np
 from numpy import loadtxt
@@ -41,7 +41,7 @@ def read_ts(file: str = "./cup/ds/ML-CUP23-TS.csv"):
 
 def euclidean_distance_loss(y_true, y_pred):
     """Compute the Euclidean distance, used in training and evaluation of the model."""
-    return K.sqrt(K.sum(K.square(y_pred - y_true), axis=-1))
+    return K.sum(K.sqrt(K.sum(K.square(y_true - y_pred), axis=1))) / float(len(y_true))
 
 
 def create_model(lmb=0.0001, lmb2=0.0001,
@@ -77,14 +77,6 @@ def create_model(lmb=0.0001, lmb2=0.0001,
     return model
 
 
-def euclidean_distance_score(y_true, y_pred):
-    """It retrieves the mean value of all the passed losses"""
-    return np.mean(euclidean_distance_loss(y_true, y_pred))
-
-
-scorer = make_scorer(euclidean_distance_score, greater_is_better=False)
-
-
 def model_selection(x, y, epochs: int = 100):
     """Computed the gridsearch over some parameters and returns the best model."""
     # Evaluation list contains each tested model and relatives parameters into a dictionary
@@ -108,11 +100,11 @@ def model_selection(x, y, epochs: int = 100):
     bs = 50
 
     for lr in learning_rate:
-        for mom in [1]:
+        for mom in momentum:
             for lm in lmb:
                 for lm2 in lmb2:
-                    # optimizer = SGD(learning_rate=lr, momentum=mom)
-                    optimizer = Adam(learning_rate=lr)
+                    optimizer = SGD(learning_rate=lr, momentum=mom)
+                    # optimizer = Adam(learning_rate=lr)
                     model = create_model(lmb=lm, lmb2=lm2, regularizer=l1_l2)
                     model.compile(optimizer=optimizer, loss=euclidean_distance_loss)
                     history = model.fit(x, y, batch_size=bs, epochs=epochs, validation_split=0.3)
@@ -161,7 +153,6 @@ def predict(model, x_ts, x_its, y_its):
     return [y_pred[:, i] for i in range(y_pred.shape[1])], K.eval(iloss)
 
 
-
 def plot_learning_curve(history, start_epoch=1, **kwargs):
     lgd = ['Loss TR']
     plt.plot(range(start_epoch, kwargs['epochs']), history['loss'][start_epoch:])
@@ -190,7 +181,7 @@ def plot_learning_curve(history, start_epoch=1, **kwargs):
     plt.show()
 
 
-def keras_nn(ms=True):
+def keras_nn(ms=False):
     print("keras start")
 
     file_path_tr = "./cup/ds/ML-CUP23-TR.csv"
@@ -200,17 +191,17 @@ def keras_nn(ms=True):
     if ms:
         params = model_selection(x, y)
     else:
-        # Best model with Lasso/Ridge regulatization
+        # Best model with Lasso/Ridge regularization
         # params = dict(learning_rate=0.016, momentum=0.9, lmb=0.0005, epochs=1000, batch_size=50, regularizer=l2)
         # Best model with ElasticNet regularization
         params = dict(learning_rate=0.02, momentum=0.9, lmb=0.0005,
                       lmb2=0.0005, epochs=5000, batch_size=50, regularizer=l1_l2)
 
     # Create and fit the model
-    cb = EarlyStopping(monitor="val_loss", patience=10)
+    cb = EarlyStopping(monitor="val_loss", patience=5)
     model = create_model(lmb=params['lmb'], lmb2=params["lmb2"], regularizer=params["regularizer"])
-    # model.compile(optimizer=SGD(learning_rate=params["learning_rate"], momentum=params["momentum"]))
-    model.compile(optimizer=Adam(learning_rate=params["learning_rate"]))
+    model.compile(optimizer=SGD(learning_rate=params["learning_rate"], momentum=params["momentum"]))
+    # model.compile(optimizer=Adam(learning_rate=params["learning_rate"]))
     res = model.fit(x, y,
                     validation_split=0.3,
                     epochs=params['epochs'],
@@ -246,15 +237,15 @@ def extremelm():
     file_path_tr = "./cup/ds/ML-CUP23-TR.csv"
     x_train, y_train, x_test, y_test = read_tr(file_path_tr)
     num_classes = 3
-    num_hidden_units = 300
+    num_hidden_units = 500
 
     # Create instance of our model
     model = ELM(
         num_input_nodes=10,
         num_hidden_units=num_hidden_units,
         num_out_units=num_classes,
-        activation="sigmoid",
-        loss="mse"
+        activation="fourier",
+        loss="mee"
     )
 
     # Train
@@ -269,4 +260,4 @@ def extremelm():
     print('val acc: %f' % val_acc)
 
 
-extremelm()
+keras_nn()
