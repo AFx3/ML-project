@@ -45,8 +45,8 @@ def euclidean_distance_loss(y_true, y_pred):
 
 
 def create_model(lmb=0.0001, lmb2=0.0001,
-                 n_units=20,
-                 n_layers=3,
+                 n_units=5,
+                 n_layers=2,
                  init_mode='glorot_normal',
                  activation_fx='tanh',
                  regularizer=l1_l2):
@@ -81,16 +81,16 @@ def model_selection(x, y, epochs: int = 100):
     """Computed the gridsearch over some parameters and returns the best model."""
     # Evaluation list contains each tested model and relatives parameters into a dictionary
     evaluation = []
-    learning_rate = np.arange(start=0.01, stop=0.4, step=0.01)
+    learning_rate = np.arange(start=0.02, stop=0.4, step=0.01)
     learning_rate = [float(round(i, 4)) for i in list(learning_rate)]
 
     momentum = np.arange(start=0.9, stop=1, step=0.1)
     momentum = [float(round(i, 1)) for i in list(momentum)]
 
-    lmb = np.arange(start=0.0001, stop=0.001, step=0.0001)
+    lmb = np.arange(start=0.0001, stop=0.001, step=0.0002)
     lmb = [float(round(i, 5)) for i in list(lmb)]
 
-    lmb2 = np.arange(start=0.0001, stop=0.001, step=0.0004)
+    lmb2 = np.arange(start=0.0001, stop=0.001, step=0.0002)
     lmb2 = [float(round(i, 5)) for i in list(lmb)]
 
     total = len(learning_rate) * len(momentum) * len(lmb)
@@ -163,7 +163,7 @@ def plot_learning_curve(history, start_epoch=1, **kwargs):
 
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
-    plt.title(f'Keras Learning Curve \n {kwargs}')
+    plt.title(f'Keras Learning Curve \n \u03b7: 0.02, Momentum: 0.9, \u03bb\u2081: 7e-4, \u03bb\u2082: 6e-4, Regularizer: L1L2, Optimizer: Adam')
     plt.legend(lgd)
 
     # Check if predictions are available in the history
@@ -176,7 +176,7 @@ def plot_learning_curve(history, start_epoch=1, **kwargs):
             plt.plot(range(start_epoch, kwargs['epochs']), predictions[:, i][start_epoch:])
             plt.xlabel("Epoch")
             plt.ylabel(f"Prediction Variable {i + 1}")
-            plt.title(f'Keras Learning Curve \n {kwargs} - Prediction Variable {i + 1}')
+            plt.title(f'Keras Learning Curve {kwargs}')
 
     plt.show()
 
@@ -194,16 +194,16 @@ def keras_nn(ms=False):
         # Best model with Lasso/Ridge regularization
         # params = dict(learning_rate=0.016, momentum=0.9, lmb=0.0005, epochs=1000, batch_size=50, regularizer=l2)
         # Best model with ElasticNet regularization
-        params = dict(learning_rate=0.02, momentum=0.9, lmb=0.0005,
-                      lmb2=0.0005, epochs=5000, batch_size=50, regularizer=l1_l2)
+        params = dict(learning_rate=0.02, momentum=0.9, lmb=0.0007,
+                      lmb2=0.0006, epochs=1000, batch_size=50, regularizer=l1_l2)
 
     # Create and fit the model
     cb = EarlyStopping(monitor="val_loss", patience=5)
     model = create_model(lmb=params['lmb'], lmb2=params["lmb2"], regularizer=params["regularizer"])
-    model.compile(optimizer=SGD(learning_rate=params["learning_rate"], momentum=params["momentum"]))
-    # model.compile(optimizer=Adam(learning_rate=params["learning_rate"]))
+    model.compile(optimizer=SGD(learning_rate=params["learning_rate"], momentum=params["momentum"]), loss=euclidean_distance_loss)
+    # model.compile(optimizer=Adam(learning_rate=params["learning_rate"]), loss=euclidean_distance_loss)
     res = model.fit(x, y,
-                    validation_split=0.3,
+                    validation_split=0.2,
                     epochs=params['epochs'],
                     batch_size=params['batch_size'],
                     callbacks=[cb],
@@ -231,21 +231,22 @@ def keras_nn(ms=False):
     plot_learning_curve(res.history, savefig=True, **params)
 
 
-def extremelm():
+def extremelm(hu):
     """Create and fit an extreme learning machine using the Moore-Penrose pseudo inverse as shown in the original
-    aper."""
+    paper."""
     file_path_tr = "./cup/ds/ML-CUP23-TR.csv"
     x_train, y_train, x_test, y_test = read_tr(file_path_tr)
     num_classes = 3
-    num_hidden_units = 500
+    num_hidden_units = hu
 
     # Create instance of our model
     model = ELM(
         num_input_nodes=10,
         num_hidden_units=num_hidden_units,
         num_out_units=num_classes,
-        activation="fourier",
-        loss="mee"
+        activation="sigmoid",
+        loss="mee",
+        w_init="xavier"
     )
 
     # Train
@@ -259,5 +260,7 @@ def extremelm():
     print('val loss: %f' % val_loss)
     print('val acc: %f' % val_acc)
 
+    return train_loss, val_loss
 
-keras_nn()
+
+extremelm(300)

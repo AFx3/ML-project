@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.random import standard_normal, normal, uniform
 import time
 from keras import backend as K
 
@@ -31,8 +32,25 @@ def _hardlimit(x):
     return (x >= 0).astype(int)
 
 
+def _relu(x):
+    return np.maximum(0, x)
+
+
 def _identity(x):
     return x
+
+
+def _standard_normal(size):
+    return standard_normal(size)
+
+
+def _xavier(size):
+    bound = (np.sqrt(6) / np.sqrt(size[0] + size[1]))
+    return uniform(low=-bound, high=bound, size=size)
+
+
+def _he_normal(size):
+    return normal(loc=0.0, scale=np.sqrt(2 / size[0]), size=size)
 
 
 def getActivation(name):
@@ -40,7 +58,8 @@ def getActivation(name):
         'sigmoid': _sigmoid,
         'fourier': _fourier,
         'hardlimit': _hardlimit,
-        'tanh': _tanh
+        'tanh': _tanh,
+        'relu': _relu
     }[name]
 
 
@@ -49,6 +68,14 @@ def getLoss(name):
         'mse': _mean_squared_error,
         'mae': _mean_abs_error,
         'mee': _euclidean_error
+    }[name]
+
+
+def getInit(name: str, size: tuple):
+    return {
+        'std': _standard_normal(size),
+        'xavier': _xavier(size),
+        'he': _he_normal(size)
     }[name]
 
 
@@ -67,8 +94,8 @@ class ELM:
         else:
             self._beta = np.random.uniform(-1., 1., size=(self._num_hidden_units, self._num_out_units))
 
-        if isinstance(w_init, np.ndarray):
-            self._w = w_init
+        if isinstance(w_init, str):
+            self._w = getInit(w_init, size=(self._num_input_nodes, self._num_hidden_units))
         else:
             self._w = np.random.uniform(-1, 1, size=(self._num_input_nodes, self._num_hidden_units))
 
@@ -101,7 +128,7 @@ class ELM:
     def evaluate(self, X, Y):
         pred = self(X)
 
-        # Loss (base on model setting)
+        # Loss (based on model setting)
         loss = self._loss(Y, pred)
 
         # Accuracy

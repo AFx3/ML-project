@@ -21,44 +21,44 @@ Parameters:
 - Momentum: 0.9
 - Lmb1: 0.0005
 - Lmb2: 0.0005
-- Epochs: 470 ca
+- Epochs: 30 ca
 
-TR Loss:  5.028925897931913e-07
-VL Loss:  4.6457168423330586e-07
-TS Loss:  43.88590842436641
+TR Loss:  8.474767684936523
+VL Loss:  9.217187881469727
+TS Loss:  9.190364972131503
 ------------------------------------------------
 →→→ Optimizer: Adam ←←←
 Parameters:
 - Learning rate: 0.02
 - Lmb1: 0.0007
 - Lmb2: 0.0006
-- Epochs: 20 ca
+- Epochs: 35 ca
 
-TR Loss:  0.00015281887317541987
-VL Loss:  0.00016123481327667832
-TS Loss:  43.88595076001786
+TR Loss:  9.503718376159668
+VL Loss:  9.77015209197998
+TS Loss:  8.887433316628265
 ------------------------------------------------
 →→→ Regularizer: Lasso ←←←
 Parameters:
 - Learning rate: 0.02
 - Momentum: 0.9
 - Lmb: 0.0007
-- Epochs: 554 ca
+- Epochs: 35 ca
 
-TR Loss:  9.514876069260936e-07
-VL Loss:  9.675022738520056e-07
-TS Loss:  43.885908425023956
+TR Loss:  8.725552558898926
+VL Loss:  8.762089729309082
+TS Loss:  8.616841958558712
 ------------------------------------------------
 →→→ Regularizer: Ridge ←←←
 Parameters:
 - Learning rate: 0.02
 - Momentum: 0.9
 - Lmb: 0.0007
-- Epochs: 5000+ ca (no EarlyStopping encountered)
+- Epochs: 35 ca
 
-TR Loss:  2.0980097859176436e-17
-VL Loss:  2.0903623357184684e-17
-TS Loss:  43.88590842381799
+TR Loss:  9.8570556640625
+VL Loss:  9.902321815490723
+TS Loss:  9.872679336840495
 ------------------------------------------------
 
 Results with 20 units 3 layers and EarlyStopping:
@@ -70,11 +70,11 @@ Parameters:
 - Lmb1: 0.0005
 - Lmb2: 0.0005
 - Regularizer: ElasticNet
-- Epochs: 340 ca
+- Epochs: 25 ca
 
-TR Loss:  6.388082056218991e-06
-VL Loss:  6.29686155662057e-06
-TS Loss:  43.8859084238177
+TR Loss:  3.864628791809082
+VL Loss:  3.807034730911255
+TS Loss:  3.4471385353443633
 ------------------------------------------------
 →→→ Optimizer: Adam ←←←
 Parameters:
@@ -83,38 +83,39 @@ Parameters:
 - Lmb2: 0.0003
 - Epochs: 20 ca
 
-TR Loss:  0.0004916514153592288
-VL Loss:  0.0005132898804731667
-TS Loss:  43.885910531276046
+TR Loss:  4.59597110748291
+VL Loss:  4.700719356536865
+TS Loss:  4.403369466999946
 ------------------------------------------------
 →→→ Regularizer: Lasso ←←←
 Parameters:
 - Learning rate: 0.02
 - Momentum: 0.9
 - Lmb: 0.0005
-- Epochs: 500 ca
+- Epochs: 25 ca
 
-TR Loss:  6.495331490441458e-06
-VL Loss:  6.531400231324369e-06
-TS Loss:  43.88590842381797
+TR Loss:  4.184088706970215
+VL Loss:  4.157263278961182
+TS Loss:  3.976973012638843
 ------------------------------------------------
 →→→ Regularizer: Ridge ←←←
 Parameters:
 - Learning rate: 0.02
 - Momentum: 0.9
 - Lmb: 0.0005
-- Epochs: 5000+ (no EarlyStopping encountered)
+- Epochs: 20 ca
 
-TR Loss:  1.185151560223474e-10
-VL Loss:  1.182684505884879e-10
-TS Loss:  43.885908423818265
+TR Loss:  4.843702793121338
+VL Loss:  5.259703636169434
+TS Loss:  4.901579064855656
 ------------------------------------------------
 
 ELM results with 300 hidden units and sigmoid activation function
-- NO PARAMETERS NEEDED
+- Activation function: sigmoid
+- Weight initializer: Normalized Xavier
 
-Train time: 0.12140297889709473
-train loss: 0.036575
-train acc: 0.998824
-val loss: 0.599965
-val acc: 1.000000
+Train time: 0.3022739887237549
+train loss: 0.366960
+train acc: 0.997647
+val loss: 0.838438
+val acc: 0.986667
