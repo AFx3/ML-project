@@ -1,0 +1,2 @@
+---ABSTRACT---
+The final model that gave us the best results in the training/validation process is the Extreme learning machine in its classic form as presented by Huang et al. 'Extreme learning machine: Theory and applications'. The main characteristics are: 300 hidden units, (fixed) hidden weight matrix initialized using a Glorot Normal, Sigmoid activation function and training using the Moore-Penrose pseudo-inverse matrix. The validation process has been conducted through Repeated Hold-out method.

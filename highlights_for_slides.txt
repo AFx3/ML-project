@@ -114,8 +114,9 @@ ELM results with 300 hidden units and sigmoid activation function
 - Activation function: sigmoid
 - Weight initializer: Normalized Xavier
 
-Train time: 0.3022739887237549
-train loss: 0.366960
-train acc: 0.997647
-val loss: 0.838438
-val acc: 0.986667
+Train time: 0.146101713180542
+train loss: 0.328771
+train acc: 0.998615
+val loss: 0.737724
+val acc: 0.984375
+TS Loss:  1.0674195192802867

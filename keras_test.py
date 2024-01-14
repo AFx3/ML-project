@@ -233,11 +233,16 @@ def keras_nn(ms=False):
     plot_learning_curve(res.history, savefig=True, **params)
 
 
-def extremelm(hu, loss=False):
+def extremelm(hu, loss=True):
     """Create and fit an extreme learning machine using the Moore-Penrose pseudo inverse as shown in the original
     paper."""
     file_path_tr = "./cup/ds/ML-CUP23-TR.csv"
     x_train, y_train, x_test, y_test = read_tr(file_path_tr)
+    x_tr, x_val, y_tr, y_val = train_test_split(x_train, y_train, test_size=0.15)
+    print(x_train.shape)
+    print(y_train.shape)
+    print(x_tr.shape)
+    print(y_tr.shape)
     test = read_ts()
     num_classes = 3
     num_hidden_units = hu
@@ -253,17 +258,21 @@ def extremelm(hu, loss=False):
     )
 
     # Train
-    model.fit(x_train, y_train, True)
+    model.fit(x_tr, y_tr, True)
     pred = model(test)
     if loss:
-        train_loss, train_acc = model.evaluate(x_train, y_train)
+        train_loss, train_acc = model.evaluate(x_tr, y_tr)
         print('train loss: %f' % train_loss)
         print('train acc: %f' % train_acc)
 
         # Validation
-        val_loss, val_acc = model.evaluate(x_test, y_test)
+        val_loss, val_acc = model.evaluate(x_val, y_val)
         print('val loss: %f' % val_loss)
         print('val acc: %f' % val_acc)
+
+        y_ipred = model(x_test)
+        iloss = euclidean_distance_loss(y_test, y_ipred)
+        print("TS Loss: ", np.mean(K.eval(iloss)))
 
     return pred
 
@@ -289,4 +298,4 @@ def save_predictions_to_csv(file_path, y_pred):
             writer.writerow([i + 1] + list(row))
 
 
-save_predictions_to_csv("FraDeLo_ML-CUP23-TS.csv", extremelm(300))
+extremelm(300)
