@@ -289,4 +289,4 @@ def save_predictions_to_csv(file_path, y_pred):
             writer.writerow([i + 1] + list(row))
 
 
-save_predictions_to_csv("test.csv", extremelm(300))
+save_predictions_to_csv("FraDeLo_ML-CUP23-TS.csv", extremelm(300))
