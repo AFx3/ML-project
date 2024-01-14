@@ -9,6 +9,8 @@ from numpy import loadtxt
 from keras import backend as K
 from sklearn.metrics import make_scorer
 from elm import ELM
+import csv
+import datetime
 
 from matplotlib import pyplot as plt
 
@@ -231,11 +233,12 @@ def keras_nn(ms=False):
     plot_learning_curve(res.history, savefig=True, **params)
 
 
-def extremelm(hu):
+def extremelm(hu, loss=False):
     """Create and fit an extreme learning machine using the Moore-Penrose pseudo inverse as shown in the original
     paper."""
     file_path_tr = "./cup/ds/ML-CUP23-TR.csv"
     x_train, y_train, x_test, y_test = read_tr(file_path_tr)
+    test = read_ts()
     num_classes = 3
     num_hidden_units = hu
 
@@ -251,16 +254,39 @@ def extremelm(hu):
 
     # Train
     model.fit(x_train, y_train, True)
-    train_loss, train_acc = model.evaluate(x_train, y_train)
-    print('train loss: %f' % train_loss)
-    print('train acc: %f' % train_acc)
+    pred = model(test)
+    if loss:
+        train_loss, train_acc = model.evaluate(x_train, y_train)
+        print('train loss: %f' % train_loss)
+        print('train acc: %f' % train_acc)
 
-    # Validation
-    val_loss, val_acc = model.evaluate(x_test, y_test)
-    print('val loss: %f' % val_loss)
-    print('val acc: %f' % val_acc)
+        # Validation
+        val_loss, val_acc = model.evaluate(x_test, y_test)
+        print('val loss: %f' % val_loss)
+        print('val acc: %f' % val_acc)
 
-    return train_loss, val_loss
+    return pred
 
 
-extremelm(300)
+# save results for the CUP
+def save_predictions_to_csv(file_path, y_pred):
+    # Generate timestamp for the date
+    timestamp = datetime.datetime.now().strftime("%d %b %Y")
+
+    # Write information to the CSV file
+    with open(file_path, mode='w', newline='') as file:
+        writer = csv.writer(file, delimiter=',')
+        writer.writerow(['Franceschi Andrea - Marco Del Pistoia - Francesco Longobardi'])
+        writer.writerow(['FraDeLo'])
+        writer.writerow(['ML-CUP23 v1'])
+        writer.writerow([f'date ({timestamp})'])
+
+    # Write predictions to the CSV file
+    with open(file_path, mode='a', newline='') as file:
+        writer = csv.writer(file, delimiter=',')
+        writer.writerow(['id', 'output_x', 'output_y', 'output_z'])
+        for i, row in enumerate(y_pred):
+            writer.writerow([i + 1] + list(row))
+
+
+save_predictions_to_csv("test.csv", extremelm(300))
